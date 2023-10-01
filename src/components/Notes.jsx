@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Button,
   Col,
@@ -17,12 +17,28 @@ import ExitFullscreenIcon from "./icons/ExitFullscreenIcon";
 
 const Notes = () => {
   const initNotes = getInitialData();
-  const [activeNotes, setActiveNotes] = useState(initNotes);
-  const [archivedNotes, setArchivedNotes] = useState([]);
+  const [allNotes, setAllNotes] = useState(initNotes);
+  const [search, setSearch] = useState("");
   const [fullScreen, setFullscreen] = useState({
     active: false,
     archived: false,
   });
+
+  const filterNotes = useMemo(() => {
+    return allNotes.filter((a) => {
+      if (search && search.trim().length) {
+        const keyword = search.toLowerCase();
+        return (
+          a.title.toLowerCase().indexOf(keyword) > -1 ||
+          a.body.toLowerCase().indexOf(keyword) > -1
+        );
+      }
+      return a;
+    });
+  }, [search, allNotes]);
+
+  const activeNotes = filterNotes.filter((a) => !a.archived);
+  const archivedNotes = filterNotes.filter((a) => a.archived);
 
   return (
     <Container fluid>
@@ -33,7 +49,12 @@ const Notes = () => {
             <InputGroup.Text>
               <SearchIcon />
             </InputGroup.Text>
-            <Form.Control type="text" placeholder="Cari catatan" />
+            <Form.Control
+              type="text"
+              placeholder="Cari catatan"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </InputGroup>
         </Form>
       </Navbar>
@@ -66,7 +87,7 @@ const Notes = () => {
               fullScreen.active ? "h-auto" : "h-50"
             } overflow-auto`}
           >
-            <NoteList data={activeNotes} />
+            <NoteList data={activeNotes} {...{ filterNotes, setAllNotes }} />
           </div>
           <div
             className={
@@ -98,11 +119,11 @@ const Notes = () => {
               fullScreen.archived ? "h-auto" : "h-50"
             } overflow-auto`}
           >
-            <NoteList data={archivedNotes} />
+            <NoteList data={archivedNotes} {...{ filterNotes, setAllNotes }} />
           </div>
         </Col>
         <Col xs={4}>
-          <NewNote />
+          <NewNote {...{ filterNotes, setAllNotes }} />
         </Col>
       </Row>
     </Container>
